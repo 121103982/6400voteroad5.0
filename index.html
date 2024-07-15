@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Vote Road Level</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        .content {
+            text-align: center;
+            width: 100%;
+            padding: 10px;
+        }
+        .require {
+            text-align: left;
+            width: 90%;
+            margin: 0 auto;
+            overflow-y: auto;
+            height: 50vh;
+            font-size: 1rem;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        .image-container {
+            margin-bottom: 20px;
+        }
+        .rating-label {
+            font-size: 1rem;
+            margin: 0 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+        @media (max-width: 768px) {
+            .require {
+                font-size: 0.9rem;
+                height: 40vh;
+            }
+            .rating-label {
+                font-size: 0.8rem;
+                margin: 0 3px;
+            }
+            button {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+            img {
+                max-width: 100%;
+            }
+        }
+        @media (max-width: 480px) {
+            .require {
+                font-size: 0.8rem;
+                height: 30vh;
+            }
+            .rating-label {
+                font-size: 0.7rem;
+                margin: 0 2px;
+            }
+            button {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuidv4.min.js"></script>
+</head>
+<body>
+<div class="content">
+    <h1>Welcome to Road Condition Rating System (PSCI)</h1>
+    <div class="require">
+        <p>
+            - Rating 10 (Excellent): Roads with no visible defects, routine maintenance.<br>
+            - Rating 9 (Very Good): Less than 10% surface defects, minor issues like ravelling or bleeding.<br>
+            - Rating 8 (Good): 10% to 30% surface defects, minor restoration needed for skid resistance.<br>
+            - Rating 7 (Good): More than 30% surface defects, no structural distresses.<br>
+            - Rating 6 (Fair): Some cracking and patching in good condition, slight surface distortions.<br>
+            - Rating 5 (Fair): Noticeable cracking (>20%), patching in fair condition, significant distortions.<br>
+            - Rating 4 (Poor): Structural distresses present like rutting and cracking, 5% to 25% of surface affected.<br>
+            - Rating 3 (Poor): 25% to 50% of surface with significant structural distresses, more frequent potholes.<br>
+            - Rating 2 (Very Poor): Severe structural distresses over 50% of surface, road reconstruction needed.<br>
+            - Rating 1 (Failed): Complete failure, extensive loss of pavement surface, deep potholes.<br>
+        </p>
+    </div>
+    <form id="ratingForm">
+        <div>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div><br><br>
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div><br><br>
+        <div id="imagesContainer"></div>
+        <button type="submit">Submit</button>
+    </form>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "web6400.firebaseapp.com",
+            databaseURL: "https://web6400-default-rtdb.firebaseio.com",
+            projectId: "web6400",
+            storageBucket: "web6400.appspot.com",
+            messagingSenderId: "43994478239",
+            appId: "1:43994478239:web:fdd259eb55559aa39794aa",
+            measurementId: "G-3QWTDFLBY0",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const images = [
+            'Centre_Cork@51.87710933_-8.484882206_270.7521973.jpg',
+            'Centre_Cork@51.87711885_-8.485061091_273.0585938.jpg',
+            'Centre_Cork@51.87712884_-8.484778209_78.34536373.jpg',
+            'Centre_Cork@51.87713725_-8.484910847_107.2428042.jpg',
+            'Centre_Cork@51.87715232_-8.484972955_121.0063792.jpg',
+            'Centre_Cork@51.87721357_-8.485067429_-1.0.jpg',
+            'r0201.jpg',
+            'Centre_Cork@51.87731261_-8.484699502_356.3882689.jpg',
+            'Centre_Cork@51.87754847_-8.484660323_4.992606863.jpg',
+            'r0301.jpg',
+            'Centre_Cork@51.87780232_-8.484627539_3.515092134.jpg',
+            'Centre_Cork@51.87807756_-8.484589177_7.143539429.jpg',
+            'Centre_Cork@51.8783085_-8.484526296_9.337269783.jpg',
+            'Centre_Cork@51.87848211_-8.484471123_9.951418877.jpg',
+            'Centre_Cork@51.87859845_-8.484464262_10.51813698.jpg',
+            'r0401.jpg',
+            'Centre_Cork@51.87872962_-8.484842466_287.6641541.jpg',
+            'Centre_Cork@51.87881639_-8.485306661_286.7486267.jpg',
+            'Centre_Cork@51.87890476_-8.485825658_286.7743835.jpg',
+            'r0101.jpg',
+            'Centre_Cork@51.87898953_-8.486342034_286.7743835.jpg',
+            'Centre_Cork@51.87908594_-8.486885434_286.9942932.jpg',
+            'Centre_Cork@51.87917889_-8.487379126_286.5163574.jpg',
+            'r0501.jpg',
+            'Centre_Cork@51.87926787_-8.487859275_286.4566525.jpg',
+            'Centre_Cork@51.87935598_-8.488379736_286.4136353.jpg',
+            'Centre_Cork@51.87946069_-8.488910543_287.0954895.jpg',
+            'Centre_Cork@51.8795612_-8.489428894_287.4703674.jpg',
+            'Centre_Cork@51.87965802_-8.489910856_287.4703674.jpg',
+            'Centre_Cork@51.87973743_-8.490318966_288.1083069.jpg',
+            'Centre_Cork@51.87981002_-8.490638266_288.8343201.jpg',
+            'Centre_Cork@51.87981986_-8.490772223_289.0228271.jpg',
+            'Centre_Cork@51.87983063_-8.49074998_289.0228271.jpg',
+            'r0502.jpg',
+            'Centre_Cork@51.87988132_-8.491041634_290.3043518.jpg',
+            'Centre_Cork@51.88001052_-8.491425002_299.6183777.jpg',
+            'Centre_Cork@51.88016108_-8.491813693_302.2580566.jpg',
+            'Centre_Cork@51.88034885_-8.492255336_307.4150391.jpg',
+            'Centre_Cork@51.88057744_-8.492723326_310.2636414.jpg',
+            'Centre_Cork@51.88085457_-8.493251767_313.3708801.jpg',
+            'Centre_Cork@51.88106655_-8.493605357_313.3708801.jpg',
+            'Centre_Cork@51.88136934_-8.494127734_313.2067261.jpg',
+            'Centre_Cork@51.88166419_-8.494621165_313.6036682.jpg',
+            'Centre_Cork@51.88197364_-8.495145287_313.2902832.jpg',
+            'Centre_Cork@51.88226152_-8.495659271_312.7519531.jpg',
+            'Centre_Cork@51.88246673_-8.49601715_312.805481.jpg',
+            'Centre_Cork@51.88276964_-8.496512559_313.0020142.jpg',
+            'Centre_Cork@51.88306125_-8.497004683_313.2928772.jpg',
+            'Centre_Cork@51.88335433_-8.497510346_313.2038879.jpg',
+            'Centre_Cork@51.88365415_-8.498008193_313.2033386.jpg',
+            'Centre_Cork@51.88393693_-8.498514118_313.2033386.jpg',
+            'Centre_Cork@51.88421637_-8.499001091_313.1769714.jpg',
+            'Centre_Cork@51.88448807_-8.499470704_313.1769714.jpg',
+            'Centre_Cork@51.88472212_-8.499848363_313.0038452.jpg',
+            'Centre_Cork@51.8848702_-8.500102509_313.0038452.jpg',
+            'Centre_Cork@51.8850494_-8.500458486_313.1460571.jpg',
+            'Centre_Cork@51.88518413_-8.500672128_313.7712402.jpg',
+            'Centre_Cork@51.88526581_-8.500802175_313.6287842.jpg',
+            'Centre_Cork@51.88532671_-8.501054518_333.6530762.jpg',
+            'Centre_Cork@51.88550396_-8.500651402_63.4952774.jpg',
+            'Centre_Cork@51.88560542_-8.500189662_72.99315643.jpg',
+            'Centre_Cork@51.88564001_-8.499803442_84.41545105.jpg',
+            'Centre_Cork@51.88565926_-8.499407972_85.43807983.jpg',
+            'Centre_Cork@51.88568434_-8.49903184_79.6192627.jpg',
+
+            'Centre_Cork@51.88573191_-8.498667106_71.60984802.jpg',
+            'Centre_Cork@51.88588489_-8.498609645_337.3792419.jpg',
+            'Centre_Cork@51.88607346_-8.498756097_333.9978943.jpg',
+            'Centre_Cork@51.88627447_-8.498904123_337.2462463.jpg',
+        ];
+        const container = document.getElementById('imagesContainer');
+
+        images.forEach((image, index) => {
+            const div = document.createElement('div');
+            const img = document.createElement('img');
+            img.src = `p0619/${image}`;
+            img.alt = `Image ${index + 1}`;
+            img.style.width = '640px';
+            div.appendChild(img);
+            div.appendChild(document.createElement('br'));
+
+            for (let i = 1; i <= 10; i++) {
+                const label = document.createElement('label');
+                label.innerText = `${i} `;
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = `rating-${index}`;
+                radio.value = i;
+                div.appendChild(radio);
+                div.appendChild(label);
+            }
+            container.appendChild(div);
+            container.appendChild(document.createElement('br'));
+        });
+
+        document.getElementById('ratingForm').onsubmit = function(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const data = {
+                name: name,
+                email: email,
+                ratings: []
+            };
+            images.forEach((image, index) => {
+                const radios = document.getElementsByName(`rating-${index}`);
+                radios.forEach(radio => {
+                    if (radio.checked) {
+                        data.ratings.push({image: image, rating: radio.value});
+                    }
+                });
+            });
+            const uuid = uuidv4(); // 生成唯一的 UUID
+            database.ref('ratings/' + uuid).set(data, function(error) {
+                if (error) {
+                    alert('Data could not be saved. ' + error);
+                } else {
+                    alert('Data saved successfully.');
+                    localStorage.setItem('ratings', JSON.stringify(data));
+                    window.location.href = 'result.html'; // Redirect to results page
+                }
+            });
+        };
+    });
+</script>
+<script src="script.js"></script>
+</body>
+</html>
